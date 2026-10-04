@@ -1,0 +1,33 @@
+/* Monochrome palette: black, greys, white only */
+body { background: #f6f6f6; color: #111; }
+.topbar { background: #111; color: #fff; }
+.panel { background: #fff; border: 1px solid #d9d9d9; border-radius: 8px; }
+.result-area { min-height: 460px; }
+.empty { color: #777; text-align: center; padding: 3rem 1rem; }
+.row-line:not(:last-child) { border-bottom: 1px solid #ececec; }
+.note { background: #fff; border: 1px solid #111; border-left-width: 5px; border-radius: 6px; padding: .6rem .8rem; margin-bottom: 1rem; font-size: .9rem; }
+.tag { border: 1px solid #111; border-radius: 4px; padding: 0 .4rem; font-size: .75rem; white-space: nowrap; }
+.tag-soft { border-color: #bbb; color: #555; }
+.bar { height: 8px; background: #e6e6e6; border-radius: 4px; overflow: hidden; }
+.bar > span { display: block; height: 100%; background: #111; }
+.nav-tabs .nav-link { color: #666; }
+.nav-tabs .nav-link.active { color: #111; font-weight: 600; }
+.form-control:focus, .form-select:focus { border-color: #111; box-shadow: 0 0 0 .2rem rgba(0, 0, 0, .12); }
+details > summary { cursor: pointer; color: #555; font-size: .85rem; }
+
+/* login page */
+.auth-wrap { min-height: 100vh; display: flex; }
+.auth-brand { flex: 1; background: #111; color: #fff; padding: 4rem; display: flex; flex-direction: column; justify-content: center; }
+.auth-brand h1 { font-size: 2.4rem; font-weight: 700; }
+.auth-brand ul { list-style: none; padding: 0; margin-top: 2rem; }
+.auth-brand li { padding: .7rem 0; border-bottom: 1px solid rgba(255, 255, 255, .2); }
+.auth-form { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+@media (max-width: 768px) { .auth-brand { display: none; } }
+/* top navigation */
+.toplink { color: rgba(255, 255, 255, .65); text-decoration: none; padding: .2rem .65rem; border-radius: 6px; font-size: .9rem; }
+.toplink:hover { color: #fff; }
+.toplink.active { color: #111; background: #fff; }
+
+/* FullCalendar in black and white */
+.fc { --fc-border-color: #ddd; --fc-button-bg-color: #111; --fc-button-border-color: #111; --fc-button-hover-bg-color: #333; --fc-button-hover-border-color: #333; --fc-button-active-bg-color: #000; --fc-button-active-border-color: #000; --fc-today-bg-color: #efefef; --fc-event-bg-color: #111; --fc-event-border-color: #111; }
+.fc .fc-event { cursor: pointer; font-size: .75rem; }
