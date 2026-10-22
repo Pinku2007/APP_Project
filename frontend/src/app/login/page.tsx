@@ -61,8 +61,8 @@ export default function Workspace() {
     const u = api.getUser();
     if (!u) { router.replace("/login"); return; }
     setUserName(u.name);
-    api.getSubjects().then(setSubjects).catch(() => {});
-    api.getSessions().then(setSessions).catch(() => {});
+    api.getSubjects().then(setSubjects).catch(() => { });
+    api.getSessions().then(setSessions).catch(() => { });
   }, [router]);
 
   // runs an action, shows any error in the note box
