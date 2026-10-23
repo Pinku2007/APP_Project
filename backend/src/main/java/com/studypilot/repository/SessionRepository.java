@@ -15,4 +15,5 @@ public interface SessionRepository extends JpaRepository<Session, String> {
     List<Session> findBySubjectId(String subjectId);
     void deleteBySubjectId(String subjectId);
     List<Session> findByTopicId(String topicId);
+    List<Session> findAllByOrderByDateAscIdAsc();
 }

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import * as api from "@/lib/api";
-import "./login.css"; // new lavender styles (keep this file next to page.tsx)
+import "./login.css";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -10,20 +10,57 @@ export default function LoginPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPw, setShowPw] = useState(false); // show/hide password
-  const [busy, setBusy] = useState(false); // disables button while working
+  const [showPw, setShowPw] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function submit(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     setError("");
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPw = password.trim();
+
+    if (!cleanEmail) {
+      setError("Please enter your email.");
+      return;
+    }
+    if (!cleanPw) {
+      setError("Please enter your password.");
+      return;
+    }
+
     setBusy(true);
     try {
-      if (mode === "register") await api.register(name, email, password);
-      else await api.login(email, password);
-      router.push("/"); // go to the main workspace
+      if (mode === "register") {
+        await api.register(name.trim() || "Student", cleanEmail, cleanPw);
+      } else {
+        await api.login(cleanEmail, cleanPw);
+      }
+      router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Quick 1-click login for presentations / demos
+  async function quickLogin(demoEmail: string, demoPw: string) {
+    setError("");
+    setEmail(demoEmail);
+    setPassword(demoPw);
+    setBusy(true);
+    try {
+      await api.login(demoEmail, demoPw);
+      router.push("/");
+    } catch {
+      // If backend was completely reset and demo user missing, register it automatically
+      try {
+        await api.register(demoEmail.startsWith("student") ? "Harpreet Singh" : "Demo Student", demoEmail, demoPw);
+        router.push("/");
+      } catch (regErr) {
+        setError(regErr instanceof Error ? regErr.message : "Login failed");
+      }
     } finally {
       setBusy(false);
     }
@@ -67,11 +104,10 @@ export default function LoginPage() {
             ))}
           </ul>
 
-          {/* decorative preview cards (sample data, not real) */}
           <div className="sp-preview" aria-hidden="true">
             <div className="sp-mini sp-mini-main">
               <div className="sp-mini-head">
-                <span className="sp-tag">Cognitive Psychology</span>
+                <span className="sp-tag">Object Oriented Programming</span>
                 <span className="sp-meta">Exam in 14 days</span>
               </div>
               <div className="sp-mini-row">
@@ -88,8 +124,8 @@ export default function LoginPage() {
                   <circle cx="18" cy="18" r="15.9" fill="none" stroke="#6d58d1" strokeWidth="3.5" strokeLinecap="round" strokeDasharray="75 100" />
                 </svg>
                 <div>
-                  <p className="sp-stat-title">4.5 hrs planned today</p>
-                  <p className="sp-stat-sub">3 of 4 sessions done</p>
+                  <p className="sp-stat-title">3.0 hrs planned today</p>
+                  <p className="sp-stat-sub">Persistent H2 database</p>
                 </div>
               </div>
             </div>
@@ -114,7 +150,7 @@ export default function LoginPage() {
         <div className="sp-card">
           <h2>{mode === "login" ? "Welcome back" : "Create your account"}</h2>
           <p className="sp-card-sub">
-            {mode === "login" ? "Log in to continue your plan." : "It takes less than a minute."}
+            {mode === "login" ? "Log in to view or generate your study timetable." : "Sign up in seconds to start planning."}
           </p>
 
           <div className="sp-tabs" role="tablist" aria-label="Log in or create account">
@@ -123,7 +159,7 @@ export default function LoginPage() {
               role="tab"
               aria-selected={mode === "login"}
               className={"sp-tab " + (mode === "login" ? "active" : "")}
-              onClick={() => setMode("login")}
+              onClick={() => { setMode("login"); setError(""); }}
             >
               Log in
             </button>
@@ -132,7 +168,7 @@ export default function LoginPage() {
               role="tab"
               aria-selected={mode === "register"}
               className={"sp-tab " + (mode === "register" ? "active" : "")}
-              onClick={() => setMode("register")}
+              onClick={() => { setMode("register"); setError(""); }}
             >
               Create account
             </button>
@@ -141,10 +177,11 @@ export default function LoginPage() {
           <form className="sp-form" onSubmit={submit}>
             {mode === "register" && (
               <div>
-                <label className="sp-label" htmlFor="name">Name</label>
+                <label className="sp-label" htmlFor="name">Your Name</label>
                 <input
                   id="name"
                   className="sp-input"
+                  placeholder="e.g. Harpreet Singh"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -184,12 +221,56 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {error && <div className="sp-error" role="alert">{error}</div>}
+            {error && (
+              <div className="sp-error" role="alert">
+                {error}
+                {error.includes("No account found") && mode === "login" && (
+                  <div style={{ marginTop: "6px" }}>
+                    <button
+                      type="button"
+                      style={{ background: "none", border: "none", color: "#6d58d1", cursor: "pointer", fontWeight: 600, padding: 0, textDecoration: "underline", font: "inherit", fontSize: "0.85rem" }}
+                      onClick={() => { setMode("register"); setError(""); }}
+                    >
+                      Click here to sign up with this email
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             <button className="sp-btn" type="submit" disabled={busy}>
               {busy ? "Please wait..." : mode === "login" ? "Log in" : "Create account"}
             </button>
           </form>
+
+          {/* Quick Demo Section for College Presentation */}
+          <div className="sp-divider">One-click Demo for Presentation</div>
+          <div className="sp-demo-box">
+            <div className="sp-demo-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+              <span>Instant Test &amp; Presentation Login</span>
+            </div>
+            <div className="sp-demo-actions">
+              <button
+                type="button"
+                className="sp-demo-btn"
+                disabled={busy}
+                onClick={() => quickLogin("demo@studypilot.com", "password123")}
+              >
+                Demo Student
+              </button>
+              <button
+                type="button"
+                className="sp-demo-btn"
+                disabled={busy}
+                onClick={() => quickLogin("student@studypilot.com", "password123")}
+              >
+                Harpreet Singh
+              </button>
+            </div>
+          </div>
         </div>
       </section>
     </main>

@@ -8,10 +8,12 @@ import java.util.Optional;
 
 /**
  * UserRepository
- * Provides built-in database CRUD methods via Spring Data JPA.
+ * Provides database CRUD operations with case-insensitive email lookup.
  */
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
+    Optional<User> findByEmailIgnoreCase(String email);
     boolean existsByEmail(String email);
+    boolean existsByEmailIgnoreCase(String email);
 }

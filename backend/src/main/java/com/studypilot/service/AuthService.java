@@ -4,9 +4,12 @@ import com.studypilot.model.User;
 import com.studypilot.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 /**
  * AuthService
- * Simple service for student registration and login.
+ * Handles student registration and login with input validation,
+ * case-insensitive email normalization, and helpful error messages.
  */
 @Service
 public class AuthService {
@@ -18,19 +21,56 @@ public class AuthService {
     }
 
     public User register(User req) {
-        if (userRepository.existsByEmail(req.getEmail())) {
-            throw new IllegalArgumentException("Email is already registered.");
+        if (req == null) {
+            throw new IllegalArgumentException("Invalid registration request.");
         }
-        User newUser = new User(req.getName(), req.getEmail(), req.getPassword());
+        String name = req.getName() != null ? req.getName().trim() : "";
+        String email = req.getEmail() != null ? req.getEmail().trim().toLowerCase() : "";
+        String password = req.getPassword() != null ? req.getPassword().trim() : "";
+
+        if (name.isEmpty()) {
+            throw new IllegalArgumentException("Please enter your name.");
+        }
+        if (email.isEmpty()) {
+            throw new IllegalArgumentException("Please enter your email.");
+        }
+        if (!email.contains("@") || !email.contains(".")) {
+            throw new IllegalArgumentException("Please enter a valid email address.");
+        }
+        if (password.length() < 6) {
+            throw new IllegalArgumentException("Password must be at least 6 characters.");
+        }
+
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw new IllegalArgumentException("An account with email '" + email + "' already exists. Please log in instead.");
+        }
+
+        User newUser = new User(name, email, password);
         return userRepository.save(newUser);
     }
 
     public User login(User req) {
-        User user = userRepository.findByEmail(req.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password."));
+        if (req == null) {
+            throw new IllegalArgumentException("Invalid login request.");
+        }
+        String email = req.getEmail() != null ? req.getEmail().trim().toLowerCase() : "";
+        String password = req.getPassword() != null ? req.getPassword().trim() : "";
 
-        if (!user.getPassword().equals(req.getPassword())) {
-            throw new IllegalArgumentException("Invalid email or password.");
+        if (email.isEmpty()) {
+            throw new IllegalArgumentException("Please enter your email.");
+        }
+        if (password.isEmpty()) {
+            throw new IllegalArgumentException("Please enter your password.");
+        }
+
+        Optional<User> userOpt = userRepository.findByEmailIgnoreCase(email);
+        if (userOpt.isEmpty()) {
+            throw new IllegalArgumentException("No account found for '" + email + "'. Please check spelling, create an account, or use Demo Login.");
+        }
+
+        User user = userOpt.get();
+        if (!user.getPassword().equals(password)) {
+            throw new IllegalArgumentException("Incorrect password for " + email + ". Please try again.");
         }
         return user;
     }

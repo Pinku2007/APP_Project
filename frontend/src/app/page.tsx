@@ -97,6 +97,7 @@ export default function Workspace() {
   const allTopics = subjects.flatMap((s) => s.units.flatMap((u) => u.topics));
   const totalMin = allTopics.reduce((a, t) => a + t.estimatedMinutes, 0);
   const done = sessions.filter((s) => s.status === "COMPLETED").length;
+  const pctDone = sessions.length > 0 ? Math.round((done / sessions.length) * 100) : 0;
   const today = api.toDateStr(new Date());
   const todays = sessions.filter((s) => s.date === today);
   const byDate = sessions.reduce<Record<string, Session[]>>((acc, s) => { (acc[s.date] ??= []).push(s); return acc; }, {});
@@ -108,7 +109,7 @@ export default function Workspace() {
     <main className="container-fluid p-4">
       {/* stat row */}
       <div className="row g-3 mb-4">
-        {[["Subjects", subjects.length], ["Topics", allTopics.length], ["Total study time", hrs(totalMin)], ["Sessions done", done + " / " + sessions.length]].map(([label, val]) => (
+        {[["Subjects", subjects.length], ["Topics", allTopics.length], ["Total study time", hrs(totalMin)], ["Sessions done", `${done} / ${sessions.length} (${pctDone}%)`]].map(([label, val]) => (
           <div className="col-6 col-lg-3" key={label as string}>
             <div className="panel p-3"><div className="text-secondary small">{label}</div><div className="fs-4 fw-semibold">{val}</div></div>
           </div>
@@ -128,7 +129,7 @@ export default function Workspace() {
 
             <div className="d-flex justify-content-between align-items-center mb-1">
               <label className="form-label small mb-0">Upload Syllabus PDF (optional)</label>
-              <a href="http://localhost:8080/api/syllabi/sample-pdf" className="small">Sample PDF</a>
+              <a href={`${api.API_BASE}/api/syllabi/sample-pdf`} className="small">Sample PDF</a>
             </div>
             <input
               type="file"
@@ -260,15 +261,25 @@ export default function Workspace() {
                     <div className="small fw-semibold mb-1">{new Date(date + "T00:00:00").toDateString()}</div>
                     {list.map((s) => (
                       <div key={s.id} className="d-flex justify-content-between align-items-center small py-1">
-                        <span><span className="tag me-2">{s.subjectName}</span>{s.topicTitle}</span>
+                        <span style={{ textDecoration: s.status === "COMPLETED" ? "line-through" : "none", opacity: s.status === "COMPLETED" ? 0.7 : 1 }}>
+                          <span className="tag me-2">{s.subjectName}</span>{s.topicTitle}
+                        </span>
                         <span className="d-flex align-items-center gap-2 text-secondary">
-                          <span>{s.minutes} min{s.status === "COMPLETED" ? " (done)" : ""}</span>
+                          <span>{s.minutes} min</span>
                           <button
                             type="button"
                             className="btn btn-sm btn-outline-dark py-0 px-2"
                             onClick={() => loadResources(s.topicTitle, s.subjectName)}
                           >
                             Resources
+                          </button>
+                          <button
+                            type="button"
+                            className={`btn btn-sm ${s.status === "COMPLETED" ? "btn-outline-success" : "btn-outline-dark"} py-0 px-2`}
+                            onClick={() => complete(s.id)}
+                            title={s.status === "COMPLETED" ? "Click to mark as planned" : "Click to mark as complete"}
+                          >
+                            {s.status === "COMPLETED" ? "✓ Done" : "Complete"}
                           </button>
                         </span>
                       </div>
@@ -278,9 +289,9 @@ export default function Workspace() {
               </>
             ))}
 
-            {tab === "today" && (todays.length === 0 ? <div className="empty">No sessions scheduled for today.</div> : todays.map((s) => (
+            {tab === "today" && (todays.length === 0 ? <div className="empty">No sessions scheduled for today. Check the "Study plan" tab for your upcoming schedule.</div> : todays.map((s) => (
               <div key={s.id} className="row-line d-flex align-items-center justify-content-between gap-2 py-2">
-                <span>
+                <span style={{ textDecoration: s.status === "COMPLETED" ? "line-through" : "none", opacity: s.status === "COMPLETED" ? 0.75 : 1 }}>
                   <span className="tag me-2">{s.subjectName}</span>
                   {s.topicTitle} <span className="text-secondary small">({s.minutes} min)</span>
                 </span>
@@ -293,7 +304,9 @@ export default function Workspace() {
                     Resources
                   </button>
                   {s.status === "COMPLETED" ? (
-                    <span className="tag">Completed</span>
+                    <button className="btn btn-sm btn-outline-success" onClick={() => complete(s.id)} title="Click to undo completion">
+                      ✓ Done (Undo)
+                    </button>
                   ) : (
                     <button className="btn btn-sm btn-dark" onClick={() => complete(s.id)}>Mark complete</button>
                   )}

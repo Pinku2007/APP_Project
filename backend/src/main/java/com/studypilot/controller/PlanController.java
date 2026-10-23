@@ -14,7 +14,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:3000"}, allowCredentials = "true")
 public class PlanController {
 
     private final PlanService planService;
@@ -24,8 +24,11 @@ public class PlanController {
     }
 
     @PostMapping("/plans/generate")
-    public Map<String, Object> generatePlan(@RequestBody Map<String, Object> body) {
-        int dailyMinutes = ((Number) body.get("dailyMinutes")).intValue();
+    public Map<String, Object> generatePlan(@RequestBody(required = false) Map<String, Object> body) {
+        int dailyMinutes = 180;
+        if (body != null && body.containsKey("dailyMinutes") && body.get("dailyMinutes") != null) {
+            dailyMinutes = ((Number) body.get("dailyMinutes")).intValue();
+        }
         List<Session> sessions = planService.generatePlan(dailyMinutes);
 
         Map<String, Object> response = new HashMap<>();

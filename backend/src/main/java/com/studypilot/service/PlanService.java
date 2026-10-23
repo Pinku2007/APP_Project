@@ -29,17 +29,25 @@ public class PlanService {
     }
 
     public List<Session> getAllSessions() {
-        return sessionRepository.findAll();
+        return sessionRepository.findAllByOrderByDateAscIdAsc();
     }
 
     @Transactional
     public List<Session> completeSession(String id) {
         Session session = sessionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Session not found: " + id));
-        session.setStatus("COMPLETED");
-        session.setCompletedOn(LocalDate.now().format(DATE_FORMAT));
+
+        // Toggle completion status
+        if ("COMPLETED".equalsIgnoreCase(session.getStatus())) {
+            session.setStatus("PLANNED");
+            session.setCompletedOn(null);
+        } else {
+            session.setStatus("COMPLETED");
+            session.setCompletedOn(LocalDate.now().format(DATE_FORMAT));
+        }
+
         sessionRepository.save(session);
-        return sessionRepository.findAll();
+        return sessionRepository.findAllByOrderByDateAscIdAsc();
     }
 
     // Generates daily study schedule
@@ -50,9 +58,13 @@ public class PlanService {
             throw new IllegalArgumentException("Please add at least one subject first.");
         }
 
+        if (dailyMinutes <= 0) {
+            dailyMinutes = 180; // default 3 hours
+        }
+
         LocalDate today = LocalDate.now();
         // Keep 85% for study, 15% as buffer
-        int dailyCap = (int) Math.floor(dailyMinutes * 0.85);
+        int dailyCap = Math.max(30, (int) Math.floor(dailyMinutes * 0.85));
 
         List<SubjectTracker> trackers = new ArrayList<>();
         long maxDays = 0;
@@ -63,10 +75,17 @@ public class PlanService {
                 topics.addAll(u.getTopics());
             }
 
-            LocalDate examDate = LocalDate.parse(s.getExamDate(), DATE_FORMAT);
+            LocalDate examDate;
+            try {
+                examDate = LocalDate.parse(s.getExamDate(), DATE_FORMAT);
+            } catch (Exception e) {
+                examDate = today.plusDays(7);
+            }
+
             long daysLeft = ChronoUnit.DAYS.between(today, examDate);
+            // If exam is today or passed, allow 1 day for final revision rather than crashing
             if (daysLeft < 1) {
-                throw new IllegalArgumentException("Exam date for " + s.getName() + " must be after today.");
+                daysLeft = 1;
             }
 
             int totalMins = 0;
@@ -97,6 +116,7 @@ public class PlanService {
             }
 
             if (active.isEmpty()) continue;
+            if (totalPace <= 0) totalPace = 1.0;
 
             int usedMinutesToday = 0;
             for (SubjectTracker st : active) {
@@ -125,7 +145,7 @@ public class PlanService {
 
         sessionRepository.deleteAll();
         sessionRepository.saveAll(sessions);
-        return sessions;
+        return sessionRepository.findAllByOrderByDateAscIdAsc();
     }
 
     private int scheduleMinutes(SubjectTracker st, int minutesToGive, String dateStr, List<Session> sessions) {

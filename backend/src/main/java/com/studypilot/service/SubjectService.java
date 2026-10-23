@@ -35,10 +35,18 @@ public class SubjectService {
 
     // Read PDF file using PDFBox and extract text
     public Subject addSubjectFromPdf(String name, String examDate, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Uploaded PDF file is empty.");
+        }
         try (PDDocument document = PDDocument.load(file.getInputStream())) {
             PDFTextStripper stripper = new PDFTextStripper();
             String extractedText = stripper.getText(document);
+            if (extractedText == null || extractedText.trim().isEmpty()) {
+                throw new IllegalArgumentException("Could not extract any readable text from this PDF.");
+            }
             return addSubjectFromText(name, examDate, extractedText);
+        } catch (IllegalArgumentException iae) {
+            throw iae;
         } catch (Exception e) {
             throw new IllegalArgumentException("Could not read PDF file: " + e.getMessage());
         }
@@ -46,6 +54,14 @@ public class SubjectService {
 
     // Add subject from text input
     public Subject addSubjectFromText(String name, String examDate, String rawText) {
+        String cleanName = name != null ? name.trim() : "";
+        if (cleanName.isEmpty()) {
+            throw new IllegalArgumentException("Please enter a subject name.");
+        }
+        if (examDate == null || examDate.trim().isEmpty()) {
+            throw new IllegalArgumentException("Please select an exam date.");
+        }
+
         String subjectId = "s" + System.currentTimeMillis();
         List<Unit> units = parseUnits(rawText, subjectId);
 
@@ -53,7 +69,7 @@ public class SubjectService {
             throw new IllegalArgumentException("No topics found. Please enter syllabus text or upload a PDF.");
         }
 
-        Subject subject = new Subject(subjectId, name, examDate, units);
+        Subject subject = new Subject(subjectId, cleanName, examDate.trim(), units);
         return subjectRepository.save(subject);
     }
 
@@ -124,17 +140,19 @@ public class SubjectService {
         String[] parts = text.split("[,;•]|\\.\\s+");
         for (String part : parts) {
             String title = part.trim();
+            // Remove common bullet prefixes like "- ", "* ", "1. ", "1) "
+            title = title.replaceAll("^[\\-\\*\u2022\\d+\\.\\)]+\\s*", "").trim();
             if (title.length() < 3) continue;
 
             String difficulty = "MEDIUM";
             int minutes = 45;
 
             String lower = title.toLowerCase();
-            if (lower.contains("intro") || lower.contains("basic") || lower.contains("types")) {
+            if (lower.contains("intro") || lower.contains("basic") || lower.contains("types") || lower.contains("overview")) {
                 difficulty = "EASY";
                 minutes = 30;
             } else if (lower.contains("advanced") || lower.contains("overriding") || lower.contains("polymorphism")
-                    || lower.contains("multithreading") || lower.contains("exception") || title.length() > 25) {
+                    || lower.contains("multithreading") || lower.contains("exception") || title.length() > 30) {
                 difficulty = "HARD";
                 minutes = 60;
             }

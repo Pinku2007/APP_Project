@@ -1,5 +1,6 @@
 // Simple file containing all Spring Boot backend calls.
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+export const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+export const API_BASE = BASE;
 
 export type Topic = { id: string; title: string; difficulty: "EASY" | "MEDIUM" | "HARD"; estimatedMinutes: number };
 export type Unit = { id: string; title: string; topics: Topic[] };
